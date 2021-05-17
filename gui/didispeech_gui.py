@@ -8,6 +8,9 @@ from os import path
 import moviepy.editor
 from pydub import AudioSegment
 
+from gui.dialog.select_file import SelectFileDialog
+
+from files_management.input_file import InputFile
 
 class DidispeechGui(qt.QGridLayout):
 	""" Handle application.
@@ -15,7 +18,16 @@ class DidispeechGui(qt.QGridLayout):
 		handle their functions.
 	"""
 
-	def __init__(self, didispeech_app):
+	# default paths
+	DEFAULT_RESOURCES_DIR = "resources"
+	DEFAULT_IMG_RESOURCES_DIR = path.join(DEFAULT_RESOURCES_DIR, "images")
+	DEFAULT_OUTPUT_DIR = "output"
+	DEFAULT_INPUT_FILE = "Select file..."
+	DEFAULT_OUTPUT_FILE = path.join(DEFAULT_OUTPUT_DIR, "save.txt")
+	DEFAULT_LOGO_FILE = path.join(DEFAULT_IMG_RESOURCES_DIR, "title.png")
+
+	def __init__(self, didispeech_app, input_file=DEFAULT_INPUT_FILE, \
+		output_file=DEFAULT_OUTPUT_FILE):
 		""" Main class, application
 
 		Parameters:
@@ -24,29 +36,36 @@ class DidispeechGui(qt.QGridLayout):
 		super().__init__()
 		self._didispeech_app = didispeech_app
 
+		self._input_file = InputFile(input_file)
+		self._output_file = output_file
+
 	def init(self) -> None:
 		""" Create layout and widgets like buttons, textbox, etc.
 		"""
 
 		# load didispeech logo
 		l_title = qt.QLabel()
-		pixmap = qtg.QPixmap(path.join("resources","images","title.png"))
+		pixmap = qtg.QPixmap(self.DEFAULT_LOGO_FILE)
 		l_title.setPixmap(pixmap)
 
 		#-------------- Layout select file ----------------------------------------
 		self._f_select_file = qt.QGridLayout()
 
 		# select input file (which one to transcribe)
-		self._l_select_file = qt.QLabel("Input file:")
-		self._b_select_file = qt.QPushButton("Select file...")
+		self._l_select_input_file = qt.QLabel("Input file:")
+		self._b_select_input_file = qt.QPushButton(self._input_file.file_name)
 
 		# select output file (where to save the transcription)
 		self._l_select_output_file = qt.QLabel("Output file: ")
-		self._b_select_output_file = qt.QPushButton("Select file...")
+		self._b_select_output_file = qt.QPushButton(self._output_file)
+
+		# connect buttons to functions
+		self._b_select_input_file.clicked.connect(lambda a: self.select_input_file())
+		self._b_select_output_file.clicked.connect(lambda a: self.select_output_file())
 
 		# add them all to the layout
-		self._f_select_file.addWidget(self._l_select_file, 0,0)
-		self._f_select_file.addWidget(self._b_select_file, 1,0)
+		self._f_select_file.addWidget(self._l_select_input_file, 0,0)
+		self._f_select_file.addWidget(self._b_select_input_file, 1,0)
 
 		self._f_select_file.addWidget(self._l_select_output_file, 0,1)
 		self._f_select_file.addWidget(self._b_select_output_file, 1,1)
@@ -111,6 +130,47 @@ class DidispeechGui(qt.QGridLayout):
 		self.addLayout(self._f_select_file, 0,0)
 		self.addLayout(self._f_options, 1,0,1,1)
 		self.addLayout(self._f_output, 2,0,2,2)
+
+
+	def select_input_file(self) -> None:
+		""" Browse into filesystem to choose an audio or a video file, then 
+			write it as instance variable and as button text
+
+		"""
+		select_file_dialog = SelectFileDialog(file_types=InputFile.SUPPORTED_TYPES)
+		select_file_dialog.show()
+
+		if select_file_dialog.selected:
+			self.set_input_file(select_file_dialog.selected)
+
+	def set_input_file(self, input_file: str) -> None:
+		""" Set selected input file as instance variable and as text of b_select_input_file
+
+		Args:
+			input_file (str): selected input file
+		"""
+		self._input_file = InputFile(input_file)
+		self._b_select_input_file.setText(path.basename(input_file))
+
+	def select_output_file(self) -> None:
+		""" Browse into filesystem to choose where save the transcript, then 
+			write it as instance variable and as button text
+
+		"""
+		open_file_dialog = SelectFileDialog(title="Save file on...")
+		open_file_dialog.show()
+
+		if open_file_dialog.selected:
+			self.set_output_file(open_file_dialog.selected)
+
+	def set_output_file(self, output_file: str) -> None:
+		""" Set selected output file as instance variable and as text of b_select_output_file
+
+		Args:
+			output_file (str): selected output file
+		"""
+		self._output_file = output_file
+		self._b_select_output_file.setText(path.basename(output_file))
 
 	def tb_insert(self, text, replace=False) -> None:
 		""" Insert a text into output textbox
