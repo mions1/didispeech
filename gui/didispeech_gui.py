@@ -9,6 +9,7 @@ import moviepy.editor
 from pydub import AudioSegment
 
 from gui.dialog.select_file import SelectFileDialog
+from gui.dialog.message import MessageDialog
 
 from files_management.input_file import InputFile
 
@@ -138,10 +139,19 @@ class DidispeechGui(qt.QGridLayout):
 
 		"""
 		select_file_dialog = SelectFileDialog(file_types=InputFile.SUPPORTED_TYPES)
-		select_file_dialog.show()
+		error, selected_files = select_file_dialog.show()
 
-		if select_file_dialog.selected:
+		if error == SelectFileDialog.OK_FILE_SELECTED:
 			self.set_input_file(select_file_dialog.selected)
+		elif error == SelectFileDialog.NO_ALLOWED_EXTENSION:
+			MessageDialog("Error", "No allowed format", \
+				"Format of " + select_file_dialog.selected + " is not allowed", \
+				MessageDialog.ICON_CRITICAL)
+		elif error == SelectFileDialog.GENERIC_ERROR:
+			MessageDialog("Error", "Generic error")
+		elif error == SelectFileDialog.NO_FILE_SELECTED:
+			MessageDialog("Warning", "No file selected", icon=MessageDialog.ICON_INFORMATION)
+
 
 	def set_input_file(self, input_file: str) -> None:
 		""" Set selected input file as instance variable and as text of b_select_input_file
@@ -158,10 +168,18 @@ class DidispeechGui(qt.QGridLayout):
 
 		"""
 		open_file_dialog = SelectFileDialog(title="Save file on...")
-		open_file_dialog.show()
+		error, selected_files = open_file_dialog.show()
 
-		if open_file_dialog.selected:
+		if error == SelectFileDialog.OK_FILE_SELECTED:
 			self.set_output_file(open_file_dialog.selected)
+		elif error == SelectFileDialog.NO_ALLOWED_EXTENSION:
+			MessageDialog("Error", "No allowed format", \
+				"Format of " + select_file_dialog.selected + " is not allowed", \
+				MessageDialog.ICON_CRITICAL)
+		elif error == SelectFileDialog.GENERIC_ERROR:
+			MessageDialog("Error", "Generic error")
+		elif error == SelectFileDialog.NO_FILE_SELECTED:
+			MessageDialog("Warning", "No file selected", icon=MessageDialog.ICON_INFORMATION)
 
 	def set_output_file(self, output_file: str) -> None:
 		""" Set selected output file as instance variable and as text of b_select_output_file

@@ -33,17 +33,16 @@ class SelectFileDialog(qt.QWidget):
 		""" Show the dialog
 
 		Return:
-			str: selected file. If some errors occur, it returns error code.
+			[int, selected_files]: It returns error code and selected_files list.
 		"""
 		dialog = qt.QFileDialog(self, self._title, filter=self._file_types_str)
 		dialog.exec_()
 		error = self.check_selection(dialog.selectedFiles())
 
-		if error != self.OK_FILE_SELECTED:
-			return error
-		else:
+		if error == self.OK_FILE_SELECTED:
 			self.selected = dialog.selectedFiles()[0]
-			return self.selected
+		
+		return error, dialog.selectedFiles()
 		
 	def check_selection(self, select_files: list) -> int:
 		""" Check if a file is selected or if the format is allowed
