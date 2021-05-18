@@ -27,7 +27,12 @@ class InputFile():
 	OK_FILE_SELECTED = 2
 	GENERIC_ERROR = 3
 
-	def __init__(self, file_name) -> None:
+	def __init__(self, file_name: str):
+		""" It handles the input file (audio/video)
+
+		Args:
+			file_name (str): file name
+		"""
 
 		self.file_name = file_name
 		self._file_ext = self.get_extension(file_name)
@@ -81,7 +86,7 @@ class InputFile():
 		"""
 		video = moviepy.editor.VideoFileClip(self.file_name)
 		audio = video.audio
-		output_file = path.join("resources","output",path.basename(self.file_name)[:self.file_name.rfind(".")]+"."+output_format)
+		output_file = path.join("output",path.basename(self.file_name)[:self.file_name.rfind(".")]+"."+output_format)
 		audio.write_audiofile(output_file)
 
 		self.audio = self.get_audio(output_file, output_format)
@@ -120,3 +125,14 @@ class InputFile():
 		if not file_name:
 			file_name = self.file_name
 		return file_name[file_name.rfind(".") + 1:]
+
+	def get_audio_len(self) -> int:
+		""" Get the audio len of the input file.
+
+		Returns:
+			int: Audio len. If the audio is no loaded, False.
+		"""
+		if self.audio:
+			return len(self.audio)
+		else:
+			return False

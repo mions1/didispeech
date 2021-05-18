@@ -3,15 +3,22 @@ import PyQt5.QtWidgets as qt
 import PyQt5.QtCore as qtc
 import PyQt5.QtGui as qtg
 
+import threading
 from os import path
 
 import moviepy.editor
 from pydub import AudioSegment
 
+from utils import misc
+
 from gui.dialog.select_file import SelectFileDialog
 from gui.dialog.message import MessageDialog
 
+from multithread.multithread import CustomQThread
+
 from files_management.input_file import InputFile
+
+from core.didi import Didi
 
 class DidispeechGui(qt.QGridLayout):
 	""" Handle application.
@@ -27,18 +34,22 @@ class DidispeechGui(qt.QGridLayout):
 	DEFAULT_OUTPUT_FILE = path.join(DEFAULT_OUTPUT_DIR, "save.txt")
 	DEFAULT_LOGO_FILE = path.join(DEFAULT_IMG_RESOURCES_DIR, "title.png")
 
-	def __init__(self, didispeech_app, input_file=DEFAULT_INPUT_FILE, \
-		output_file=DEFAULT_OUTPUT_FILE):
+	def __init__(self, didispeech_app, input_file: str=DEFAULT_INPUT_FILE, \
+		output_file: str=DEFAULT_OUTPUT_FILE):
 		""" Main class, application
 
-		Parameters:
-			didispeech_app(DidispeechApp): main application
+		Args:
+			didispeech_app (DidispeechApp): main application
+			input_file (str): input file name
+			output_file (str): output file name
 		"""
 		super().__init__()
 		self._didispeech_app = didispeech_app
 
 		self._input_file = InputFile(input_file)
 		self._output_file = output_file
+
+		self.didi = Didi(self, output_file=output_file)
 
 	def init(self) -> None:
 		""" Create layout and widgets like buttons, textbox, etc.
@@ -95,6 +106,7 @@ class DidispeechGui(qt.QGridLayout):
 		self._b_start = qt.QPushButton("Start", enabled=False, default=True)
 		self._b_quit = qt.QPushButton("Force quit")
 
+		self._b_start.clicked.connect(self.start)
 		self._b_quit.clicked.connect(self._didispeech_app.exit)
 
 		# other settings: FIXME make other settings
@@ -160,7 +172,21 @@ class DidispeechGui(qt.QGridLayout):
 			input_file (str): selected input file
 		"""
 		self._input_file = InputFile(input_file)
+		self.didi.input_file = self._input_file
 		self._b_select_input_file.setText(path.basename(input_file))
+		# load audio in another thread because it can be slow
+		qthread_load_audio = CustomQThread(self, "self.didi.load_audio()", didi=self.didi)
+		qthread_load_audio.start()
+		# call set_audio() as the audio is loaded, so it enables start and sets the end point to audio len
+		qthread_load_audio.qthread_finish_signal.connect(lambda: self.set_audio())
+
+	def set_audio(self) -> None:
+		""" Load the audio into the application, setting the end point of the parsing
+			to the audio len and enabling the Start button
+		"""
+		audio_len = self.didi.input_file.get_audio_len()
+		self._e_end.setText(misc.ms_2_time(audio_len))
+		self._b_start.setEnabled(True)
 
 	def select_output_file(self) -> None:
 		""" Browse into filesystem to choose where save the transcript, then 
@@ -188,7 +214,51 @@ class DidispeechGui(qt.QGridLayout):
 			output_file (str): selected output file
 		"""
 		self._output_file = output_file
+		self.didi.output_file = self._output_file
 		self._b_select_output_file.setText(path.basename(output_file))
+
+	def start(self) -> None:
+		""" After the users set input_file, output_file, start and end points,
+			the parsing is started.
+			The parsing will be started in another thread so the gui remains
+			responsive.
+			After the parse, an information dialog will be showed.
+		"""
+		# get the start and end points
+		self._start = self._e_start.text()
+		self._end = self._e_end.text()
+
+		ms_start, ms_end = misc.time_2_ms(self._start, self._end)
+
+		# if ms_start == 0 maybe self._start is unset, so adjust it
+		if ms_start == 0:
+			self._start = "00:00:00"
+		# same for ms_end. Further, if ms_end == 0, set ms_end to audio length
+		if ms_end == 0:
+			self._end = "00:00:00"
+
+		# set values of didi object
+		self.didi.ms_start = ms_start
+		self.didi.ms_end = ms_end
+
+		# start parse in another thread
+		qthread_start = CustomQThread(self, "self.didi.start()", didi=self.didi)
+		qthread_start.start()
+		qthread_start.qthread_finish_signal.connect(lambda: self.finish_parse())
+		self._b_start.setEnabled(False)
+
+	def finish_parse(self) -> None:
+		""" Invoke at the end of parsing. It save the result on file and show it
+			on log text box. Furthermore, it shows a dialog message
+			which informs for the finish.
+		"""
+		# re-enable button
+		self._b_start.setEnabled(True)
+
+		# show result in text box and show a dialog message
+		self.tb_insert("------------ RESULT -----\n"+self.didi.output_text, replace=True)
+		MessageDialog("Finish", "Parsing done in " + misc.s_2_time(self.didi.elapsed_time),\
+					"Result saved in " + self._output_file, MessageDialog.ICON_INFORMATION)
 
 	def tb_insert(self, text, replace=False) -> None:
 		""" Insert a text into output textbox
