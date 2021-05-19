@@ -2,6 +2,8 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
+import time
+
 class CustomQThread(QThread):
 	""" This class allows to easly run a custom function in a qthread.
 		It takes as input the targetted function and kwargs.
@@ -35,3 +37,31 @@ class CustomQThread(QThread):
 	def run(self):
 		eval(self._function)
 		self.qthread_finish_signal.emit()
+
+class TimerQThread(QThread):
+	""" This class sends a signal every a while.
+	    It is basically implemented as a timer.
+	"""
+
+	qthread_timer_signal = pyqtSignal()
+
+	def __init__(self, context, seconds=1):
+		""" Read the class detail
+
+		Args:
+			context (object): who called
+			seconds (int): emits signal every tot seconds
+		"""
+		QThread.__init__(self, context)
+		self.seconds = seconds
+		self.stopped = False
+
+	def stop(self):
+		self.stopped = True
+
+	def run(self):
+		self.stopped = False
+		while not self.stopped:
+			time.sleep(self.seconds)
+			self.qthread_timer_signal.emit()
+	
