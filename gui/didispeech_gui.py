@@ -14,7 +14,7 @@ from utils import misc
 from gui.dialog.select_file import SelectFileDialog
 from gui.dialog.message import MessageDialog
 
-from multithread.multithread import CustomQThread
+from multithread.multithread import CustomQThread, TimerQThread
 
 from files_management.input_file import InputFile
 
@@ -50,6 +50,8 @@ class DidispeechGui(qt.QGridLayout):
 		self._output_file = output_file
 
 		self.didi = Didi(self, output_file=output_file)
+
+		self._timer = TimerQThread(self)
 
 	def init(self) -> None:
 		""" Create layout and widgets like buttons, textbox, etc.
@@ -180,10 +182,15 @@ class DidispeechGui(qt.QGridLayout):
 		# call set_audio() as the audio is loaded, so it enables start and sets the end point to audio len
 		qthread_load_audio.qthread_finish_signal.connect(lambda: self.set_audio())
 
+		# meanwhile loading audio, print loading
+		self._timer.start()
+		self._timer.qthread_timer_signal.connect(lambda: self.print_loading())
+
 	def set_audio(self) -> None:
 		""" Load the audio into the application, setting the end point of the parsing
 			to the audio len and enabling the Start button
 		"""
+		self._timer.stop()
 		audio_len = self.didi.input_file.get_audio_len()
 		self._e_end.setText(misc.ms_2_time(audio_len))
 		self._b_start.setEnabled(True)
@@ -247,11 +254,16 @@ class DidispeechGui(qt.QGridLayout):
 		qthread_start.qthread_finish_signal.connect(lambda: self.finish_parse())
 		self._b_start.setEnabled(False)
 
+		# meanwhile parsing, print loading
+		self._timer.start()
+		self._timer.qthread_timer_signal.connect(lambda: self.print_loading())
+
 	def finish_parse(self) -> None:
 		""" Invoke at the end of parsing. It save the result on file and show it
 			on log text box. Furthermore, it shows a dialog message
 			which informs for the finish.
 		"""
+		self._timer.stop()
 		# re-enable button
 		self._b_start.setEnabled(True)
 
@@ -259,6 +271,19 @@ class DidispeechGui(qt.QGridLayout):
 		self.tb_insert("------------ RESULT -----\n"+self.didi.output_text, replace=True)
 		MessageDialog("Finish", "Parsing done in " + misc.s_2_time(self.didi.elapsed_time),\
 					"Result saved in " + self._output_file, MessageDialog.ICON_INFORMATION)
+
+	def print_loading(self) -> None:
+		""" Print loading text
+		"""
+		if not self._timer.stopped:
+			current_text_list = self.tb_get_text().split("\n")
+			if "Loading" in current_text_list[-1]:
+				current_text_list[-1] = current_text_list[-1]+"."
+			else:
+				current_text_list.append("Loading.")
+			self.tb_insert("\n".join(current_text_list), replace=True)
+		else:
+			self.tb_insert("Done!", replace=False)
 
 	def tb_insert(self, text, replace=False) -> None:
 		""" Insert a text into output textbox
