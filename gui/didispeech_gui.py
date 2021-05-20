@@ -1,7 +1,7 @@
 import threading, os
-import PyQt5.QtWidgets as qt
-import PyQt5.QtCore as qtc
-import PyQt5.QtGui as qtg
+import PyQt6.QtWidgets as qt
+import PyQt6.QtCore as qtc
+import PyQt6.QtGui as qtg
 
 import threading
 from os import path
@@ -346,6 +346,6 @@ class DidispeechGui(qt.QGridLayout):
 			qt.QFrame: a horizontal line
 		"""
 		qhline = qt.QFrame()
-		qhline.setFrameShape(qt.QFrame.HLine)
-		qhline.setFrameShadow(qt.QFrame.Plain)
+		qhline.setFrameShape(qhline.Shape.HLine)
+		qhline.setFrameShadow(qhline.Shadow.Plain)
 		return qhline

@@ -1,12 +1,12 @@
-import PyQt5.QtWidgets as qt
+import PyQt6.QtWidgets as qt
 
 
 class MessageDialog(qt.QMessageBox):
 	
 	# icon for the message dialog
-	ICON_NOICON = qt.QMessageBox.NoIcon
-	ICON_INFORMATION = qt.QMessageBox.Information
-	ICON_CRITICAL = qt.QMessageBox.Critical
+	ICON_NOICON = qt.QMessageBox.Icon.NoIcon
+	ICON_INFORMATION = qt.QMessageBox.Icon.Information
+	ICON_CRITICAL = qt.QMessageBox.Icon.Critical
 
 	def __init__(self, title: str="Info", subtitle: str="Info", message: str="", icon: qt.QMessageBox.Icon=ICON_NOICON, show: bool=True):
 		""" It shows a message dialog with given information
@@ -34,4 +34,4 @@ class MessageDialog(qt.QMessageBox):
 		self.setText(self._subtitle)
 		self.setInformativeText(self._message)
 		self.setWindowTitle(self._title)
-		self.exec_()
+		self.exec()
