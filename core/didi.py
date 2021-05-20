@@ -12,15 +12,17 @@ class Didi:
 
     THREADS = 8
 
-    def __init__(self, context, input_file: InputFile=None, ms_start=0, ms_end=0, output_file="save.txt"):
+    def __init__(self, context, input_file: InputFile=None, ms_start=0, ms_end=0, output_file="save.txt", chunk_size=50000):
         self.init(context, input_file, ms_start, ms_end, output_file)
 
-    def init(self, context, input_file: InputFile=None, ms_start=0, ms_end=0, output_file="save.txt", output_text=None, elapsed_time=None):
+    def init(self, context, input_file: InputFile=None, ms_start=0, ms_end=0, output_file="save.txt", chunk_size=50000, output_text=None, elapsed_time=None):
         self.context = context
         self.input_file = input_file
         self.ms_start = ms_start
         self.ms_end = ms_end
         self.output_file = output_file
+
+        self.chunk_size = chunk_size
 
         self.chunks = []
         self.done_chunks = []
@@ -60,7 +62,7 @@ class Didi:
 
         return self.input_file.audio
 
-    def create_chunks(self, prefix: str=None, chunk_size: int=50000) -> None:
+    def create_chunks(self, prefix: str=None, chunk_size: int=None) -> None:
         """ Divide the audio in chunks, so they can be processed in parallel.
             Every chunk will be a file named like "<prefix>_chunck_<i>.<ext>".
             self.chunks list will be filled with these chunks.
@@ -68,10 +70,13 @@ class Didi:
         Args:
             prefix (str, optional): Name to give to the chunks. It it is None, input_file_name will be. 
                 Defaults to None.
-            chunk_size (int, optional): How many milliseconds for any chunk. Defaults to 50000.
+            chunk_size (int, optional): How many milliseconds for any chunk. If none, self value will be taken. 
+                Defaults to None.
         """
         if not prefix:
             prefix = self.input_file.audio_file_name
+        if not chunk_size:
+            chunk_size = self.chunk_size
 
         i = self.ms_start
         j = 1
@@ -170,7 +175,7 @@ class Didi:
         """ Re-init Didi after the job is done
         """
         self.init(self.context, self.input_file, self.ms_start, \
-            self.ms_end, self.output_file, self.output_text, self.elapsed_time)
+            self.ms_end, self.output_file, self.chunk_size, self.output_text, self.elapsed_time)
 
     def exit(self) -> None:
         """ Force-stop the job

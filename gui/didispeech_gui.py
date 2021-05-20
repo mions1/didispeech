@@ -107,12 +107,11 @@ class DidispeechGui(qt.QGridLayout):
 		# buttons to start/quit
 		self._b_start = qt.QPushButton("Start", enabled=False, default=True)
 		self._b_quit = qt.QPushButton("Force quit")
+		self._b_advance_settings = qt.QPushButton("Hide advance settings")
 
 		self._b_start.clicked.connect(self.start)
 		self._b_quit.clicked.connect(self._didispeech_app.exit)
-
-		# other settings: FIXME make other settings
-		self._b_other_settings = qt.QPushButton("Other settings")
+		self._b_advance_settings.clicked.connect(self.toggle_advance_settings)
 
 		# add them all to the layout
 		self._f_options.addWidget(self._l_start, 0,0)
@@ -122,7 +121,20 @@ class DidispeechGui(qt.QGridLayout):
 
 		self._f_options.addWidget(self._b_start, 2,0)
 		self._f_options.addWidget(self._b_quit, 2,1)
-		#self._f_options.addWidget(self._b_other_settings, 3,0,3,3)
+		self._f_options.addWidget(self.get_QHline(), 3,0,1,2)
+		self._f_options.addWidget(self._b_advance_settings, 4,0,1,2)
+
+		#---------- Layout Advance Settings -----------------------------------
+		self._f_advance_settings = qt.QHBoxLayout()
+
+		self._e_n_threads = qt.QLineEdit()
+		self._e_n_threads.setPlaceholderText("#Threads: default 8")
+
+		self._e_chunk_size = qt.QLineEdit()
+		self._e_chunk_size.setPlaceholderText("Chunk size: default 50000")
+		
+		self._f_advance_settings.addWidget(self._e_n_threads)
+		self._f_advance_settings.addWidget(self._e_chunk_size)
 
 		#---------- Layout Output ---------------------------------------------
 		self._f_output = qt.QVBoxLayout()
@@ -144,7 +156,8 @@ class DidispeechGui(qt.QGridLayout):
 		# add all layout to the main frame
 		self.addLayout(self._f_select_file, 0,0)
 		self.addLayout(self._f_options, 1,0,1,1)
-		self.addLayout(self._f_output, 2,0,2,2)
+		self.addLayout(self._f_advance_settings, 2,0,1,2)
+		self.addLayout(self._f_output, 4,0,2,2)
 
 
 	def select_input_file(self) -> None:
@@ -244,9 +257,17 @@ class DidispeechGui(qt.QGridLayout):
 		if ms_end == 0:
 			self._end = "00:00:00"
 
-		# set values of didi object
+		# set values for didi object
 		self.didi.ms_start = ms_start
 		self.didi.ms_end = ms_end
+
+		# get advance settings values (if setted)
+		chunk_size = self._e_chunk_size.text()
+		if chunk_size.isdigit() and chunk_size > 1:
+			self.didi.chunk_size = int(chunk_size)
+		n_threads = self._e_n_threads.text()
+		if n_threads.isdigit():
+			self.didi.THREADS = int(n_threads)
 
 		# start parse in another thread
 		qthread_start = CustomQThread(self, "self.didi.start()", didi=self.didi)
@@ -271,6 +292,18 @@ class DidispeechGui(qt.QGridLayout):
 		self.tb_insert("------------ RESULT -----\n"+self.didi.output_text, replace=True)
 		MessageDialog("Finish", "Parsing done in " + misc.s_2_time(self.didi.elapsed_time),\
 					"Result saved in " + self._output_file, MessageDialog.ICON_INFORMATION)
+
+	def toggle_advance_settings(self) -> None:
+		""" Toggle visibility of advance settings layout
+		"""
+		is_visible = self._f_advance_settings.itemAt(0).isEmpty()
+
+		new_text = "Hide advance settings" if is_visible \
+			else "Show advance settings"
+		self._b_advance_settings.setText(new_text)
+
+		for i in range(self._f_advance_settings.count()):
+			self._f_advance_settings.itemAt(i).widget().setHidden(not is_visible)
 
 	def print_loading(self) -> None:
 		""" Print loading text
