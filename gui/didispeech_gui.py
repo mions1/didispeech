@@ -103,6 +103,10 @@ class DidispeechGui(qt.QGridLayout):
 		self._e_end.setMaxLength(8)
 		self._e_end.setInputMask("99:99:99")
 		self._e_end.setText("00:00:00")
+		self._b_ms_end_to_audio_len = qt.QPushButton("Time to audio len", enabled=False,)
+
+		self._b_ms_end_to_audio_len.clicked.connect(self.ms_end_to_audio_len)
+		self._b_ms_end_to_audio_len.setEnabled(False)
 
 		# buttons to start/quit
 		self._b_start = qt.QPushButton("Start", enabled=False, default=True)
@@ -118,11 +122,12 @@ class DidispeechGui(qt.QGridLayout):
 		self._f_options.addWidget(self._e_start, 0,1)
 		self._f_options.addWidget(self._l_end, 1,0)
 		self._f_options.addWidget(self._e_end, 1,1)
+		self._f_options.addWidget(self._b_ms_end_to_audio_len, 1,2)
 
-		self._f_options.addWidget(self._b_start, 2,0)
-		self._f_options.addWidget(self._b_quit, 2,1)
-		self._f_options.addWidget(self.get_QHline(), 3,0,1,2)
-		self._f_options.addWidget(self._b_advance_settings, 4,0,1,2)
+		self._f_options.addWidget(self._b_start, 2,0, 1,2)
+		self._f_options.addWidget(self._b_quit, 2,2, 1,2)
+		self._f_options.addWidget(self.get_QHline(), 3,0,1,3)
+		self._f_options.addWidget(self._b_advance_settings, 4,0,1,3)
 
 		#---------- Layout Advance Settings -----------------------------------
 		self._f_advance_settings = qt.QHBoxLayout()
@@ -207,6 +212,7 @@ class DidispeechGui(qt.QGridLayout):
 		audio_len = self.didi.input_file.get_audio_len()
 		self._e_end.setText(misc.ms_2_time(audio_len))
 		self._b_start.setEnabled(True)
+		self._b_ms_end_to_audio_len.setEnabled(True)
 
 	def select_output_file(self) -> None:
 		""" Browse into filesystem to choose where save the transcript, then 
@@ -292,6 +298,12 @@ class DidispeechGui(qt.QGridLayout):
 		self.tb_insert("------------ RESULT -----\n"+self.didi.output_text, replace=True)
 		MessageDialog("Finish", "Parsing done in " + misc.s_2_time(self.didi.elapsed_time),\
 					"Result saved in " + self._output_file, MessageDialog.ICON_INFORMATION)
+
+	def ms_end_to_audio_len(self):
+		""" Set ms end to audio lenght
+		"""
+		audio_len = self.didi.input_file.get_audio_len()
+		self._e_end.setText(misc.ms_2_time(audio_len))
 
 	def toggle_advance_settings(self) -> None:
 		""" Toggle visibility of advance settings layout
