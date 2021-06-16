@@ -136,7 +136,10 @@ class DidispeechGui(qt.QGridLayout):
 		self._e_n_threads.setPlaceholderText("#Threads: default 8")
 
 		self._e_chunk_size = qt.QLineEdit()
-		self._e_chunk_size.setPlaceholderText("Chunk size: default 50000")
+		self._e_chunk_size.setPlaceholderText("Chunk size (1000-60000): default 50000")
+		e_chunk_size_regex = qtc.QRegularExpression("^[1-5][0-9]{3,4}|60000")
+		e_chunk_size_validator = qtg.QRegularExpressionValidator(e_chunk_size_regex, self._e_chunk_size)
+		self._e_chunk_size.setValidator(e_chunk_size_validator)
 		
 		self._f_advance_settings.addWidget(self._e_n_threads)
 		self._f_advance_settings.addWidget(self._e_chunk_size)

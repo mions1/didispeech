@@ -22,7 +22,11 @@ class Didi:
         self.ms_end = ms_end
         self.output_file = output_file
 
-        self.chunk_size = chunk_size
+        # maximum length allowed by google is 60sec
+        if chunk_size > 60000:
+            self.chunk_size = 60000
+        elif chunk_size < 1000:
+            self.chunk_size = 1000
 
         self.chunks = []
         self.done_chunks = []
