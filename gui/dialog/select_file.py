@@ -39,7 +39,7 @@ class SelectFileDialog(qt.QWidget):
 		dialog.exec()
 		error = self.check_selection(dialog.selectedFiles())
 
-		if error == self.OK_FILE_SELECTED:
+		if error != self.NO_FILE_SELECTED:
 			self.selected = dialog.selectedFiles()[0]
 		
 		return error, dialog.selectedFiles()
