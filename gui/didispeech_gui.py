@@ -96,6 +96,8 @@ class DidispeechGui(qt.QGridLayout):
 		self._e_start.setMaxLength(8)
 		self._e_start.setInputMask("99:99:99")
 		self._e_start.setText("00:00:00")
+		self._cb_language = qt.QComboBox()
+		self._cb_language.addItems(["Italian", "English"])
 
 		# set the transcription end point
 		self._l_end = qt.QLabel("End (hh:mm:ss)")
@@ -120,6 +122,7 @@ class DidispeechGui(qt.QGridLayout):
 		# add them all to the layout
 		self._f_options.addWidget(self._l_start, 0,0)
 		self._f_options.addWidget(self._e_start, 0,1)
+		self._f_options.addWidget(self._cb_language, 0,2)
 		self._f_options.addWidget(self._l_end, 1,0)
 		self._f_options.addWidget(self._e_end, 1,1)
 		self._f_options.addWidget(self._b_ms_end_to_audio_len, 1,2)
@@ -270,6 +273,9 @@ class DidispeechGui(qt.QGridLayout):
 		self.didi.ms_start = ms_start
 		self.didi.ms_end = ms_end
 
+		# set transcript language
+		self.didi.lan = self.getLanguage()
+
 		# get advance settings values (if setted)
 		chunk_size = self._e_chunk_size.text()
 		if chunk_size.isdigit() and chunk_size > 1:
@@ -301,6 +307,19 @@ class DidispeechGui(qt.QGridLayout):
 		self.tb_insert("------------ RESULT -----\n"+self.didi.output_text, replace=True)
 		MessageDialog("Finish", "Parsing done in " + misc.s_2_time(self.didi.elapsed_time),\
 					"Result saved in " + self._output_file, MessageDialog.ICON_INFORMATION)
+
+	def getLanguage(self) -> str:
+		""" Return the choosen language in tag form.add()
+
+		Returns:
+			str: tag of choosen language
+		"""
+		language = self._cb_language.currentText()
+
+		if language == "Italian":
+			return "it-IT"
+		if language == "English":
+			return "en-EN"
 
 	def ms_end_to_audio_len(self):
 		""" Set ms end to audio lenght
