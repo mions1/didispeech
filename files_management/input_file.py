@@ -1,6 +1,6 @@
 from os import path
 
-import moviepy.editor
+import moviepy.video.io.VideoFileClip as vfc
 from pydub import AudioSegment
 
 class InputFile():
@@ -84,7 +84,7 @@ class InputFile():
 		Returns:
 			AudioSegment: audio object from the file
 		"""
-		video = moviepy.editor.VideoFileClip(self.file_name)
+		video = vfc.VideoFileClip(self.file_name)
 		audio = video.audio
 		output_file = path.join("output",path.basename(self.file_name)[:self.file_name.rfind(".")]+"."+output_format)
 		audio.write_audiofile(output_file)

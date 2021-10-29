@@ -6,10 +6,11 @@ import PyQt6.QtGui as qtg
 import threading
 from os import path
 
-import moviepy.editor
+#import moviepy.editor
 from pydub import AudioSegment
 
 from utils import misc
+from utils.misc import print_d
 
 from gui.dialog.select_file import SelectFileDialog
 from gui.dialog.message import MessageDialog
@@ -56,6 +57,7 @@ class DidispeechGui(qt.QGridLayout):
 	def init(self) -> None:
 		""" Create layout and widgets like buttons, textbox, etc.
 		"""
+		print_d(misc.INFO, topic="Gui", txt="Creating gui...")
 
 		# load didispeech logo
 		l_title = qt.QLabel()
@@ -170,26 +172,34 @@ class DidispeechGui(qt.QGridLayout):
 		self.addLayout(self._f_advance_settings, 2,0,1,2)
 		self.addLayout(self._f_output, 4,0,2,2)
 
+		print_d(misc.INFO, topic="Gui", txt="...gui created!")
 
 	def select_input_file(self) -> None:
 		""" Browse into filesystem to choose an audio or a video file, then 
 			write it as instance variable and as button text
 
 		"""
+		print_d(misc.INFO, topic="Gui", txt="Selecting input file...")
+
 		select_file_dialog = SelectFileDialog(file_types=InputFile.SUPPORTED_TYPES)
 		error, selected_files = select_file_dialog.show()
 
 		if error == SelectFileDialog.OK_FILE_SELECTED:
 			self.set_input_file(select_file_dialog.selected)
+			print_d(misc.VERBOSE, topic="Gui", value=str(error), txt="selected file: "+str(select_file_dialog.selected))
 		elif error == SelectFileDialog.NO_ALLOWED_EXTENSION:
 			MessageDialog("Error", "No allowed format", \
 				"Format of " + select_file_dialog.selected + " is not allowed", \
 				MessageDialog.ICON_CRITICAL)
+			print_d(misc.WARNING, topic="Gui", value=str(error), txt="selected file, not allowed format: "+str(select_file_dialog.selected))
 		elif error == SelectFileDialog.GENERIC_ERROR:
 			MessageDialog("Error", "Generic error")
+			print_d(misc.WARNING, topic="Gui", value=str(error), txt="generic error: "+str(select_file_dialog.selected))
 		elif error == SelectFileDialog.NO_FILE_SELECTED:
 			MessageDialog("Warning", "No file selected", icon=MessageDialog.ICON_INFORMATION)
+			print_d(misc.WARNING, topic="Gui", value=str(error), txt="no file selected")
 
+		print_d(misc.INFO, topic="Gui", txt="input file selected!")
 
 	def set_input_file(self, input_file: str) -> None:
 		""" Set selected input file as instance variable and as text of b_select_input_file
@@ -256,13 +266,17 @@ class DidispeechGui(qt.QGridLayout):
 			responsive.
 			After the parse, an information dialog will be showed.
 		"""
+		print_d(misc.INFO, topic="Gui", txt="Starting...")
+
 		# get the start and end points
+		print_d(misc.VERBOSE, topic="Gui", txt="getting start and end points")
 		self._start = self._e_start.text()
 		self._end = self._e_end.text()
 
 		ms_start, ms_end = misc.time_2_ms(self._start, self._end)
 
 		# if ms_start == 0 maybe self._start is unset, so adjust it
+		print_d(misc.VERBOSE, topic="Gui", txt="eventually, adjusting start and end points")
 		if ms_start == 0:
 			self._start = "00:00:00"
 		# same for ms_end. Further, if ms_end == 0, set ms_end to audio length
@@ -274,9 +288,11 @@ class DidispeechGui(qt.QGridLayout):
 		self.didi.ms_end = ms_end
 
 		# set transcript language
+		print_d(misc.VERBOSE, topic="Gui", txt="setting language")
 		self.didi.lan = self.getLanguage()
 
 		# get advance settings values (if setted)
+		print_d(misc.VERBOSE, topic="Gui", txt="setting advance settings")
 		chunk_size = self._e_chunk_size.text()
 		if chunk_size.isdigit() and chunk_size > 1:
 			self.didi.chunk_size = int(chunk_size)
@@ -285,12 +301,14 @@ class DidispeechGui(qt.QGridLayout):
 			self.didi.THREADS = int(n_threads)
 
 		# start parse in another thread
+		print_d(misc.VERBOSE, topic="Gui", txt="start parsing")
 		qthread_start = CustomQThread(self, "self.didi.start()", didi=self.didi)
 		qthread_start.start()
 		qthread_start.qthread_finish_signal.connect(lambda: self.finish_parse())
 		self._b_start.setEnabled(False)
 
 		# meanwhile parsing, print loading
+		print_d(misc.VERBOSE, topic="Gui", txt="start print loading")
 		self._timer.start()
 		self._timer.qthread_timer_signal.connect(lambda: self.print_loading())
 
@@ -299,6 +317,7 @@ class DidispeechGui(qt.QGridLayout):
 			on log text box. Furthermore, it shows a dialog message
 			which informs for the finish.
 		"""
+		print_d(misc.INFO, topic="Gui", txt="Parse finished")
 		self._timer.stop()
 		# re-enable button
 		self._b_start.setEnabled(True)
@@ -330,6 +349,7 @@ class DidispeechGui(qt.QGridLayout):
 	def toggle_advance_settings(self) -> None:
 		""" Toggle visibility of advance settings layout
 		"""
+		print_d(misc.VERBOSE, topic="Gui", txt="Toggle advance settings")
 		is_visible = self._f_advance_settings.itemAt(0).isEmpty()
 
 		new_text = "Hide advance settings" if is_visible \
