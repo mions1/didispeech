@@ -1,4 +1,6 @@
-import PyQt5.QtWidgets as qt
+#import PyQt5.QtWidgets as qt
+import PyQt6.QtWidgets as qt
+
 
 from gui.didispeech_gui import DidispeechGui
 
@@ -35,4 +37,4 @@ if __name__=='__main__':
 	didispeech_gui.init()
 
 	didispeech_app.repaint(didispeech_gui)
-	didispeech_app.exec_()
+	didispeech_app.exec()

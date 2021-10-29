@@ -1,6 +1,6 @@
 from os import path
 
-import PyQt5.QtWidgets as qt
+import PyQt6.QtWidgets as qt
 
 class SelectFileDialog(qt.QWidget):
 
@@ -36,10 +36,10 @@ class SelectFileDialog(qt.QWidget):
 			[int, selected_files]: It returns error code and selected_files list.
 		"""
 		dialog = qt.QFileDialog(self, self._title, filter=self._file_types_str)
-		dialog.exec_()
+		dialog.exec()
 		error = self.check_selection(dialog.selectedFiles())
 
-		if error == self.OK_FILE_SELECTED:
+		if error != self.NO_FILE_SELECTED:
 			self.selected = dialog.selectedFiles()[0]
 		
 		return error, dialog.selectedFiles()
