@@ -1,14 +1,10 @@
-import threading, os
 import PyQt6.QtWidgets as qt
 import PyQt6.QtCore as qtc
 import PyQt6.QtGui as qtg
 
-import threading
 from os import path
 
-import moviepy.editor
-from pydub import AudioSegment
-
+from gui.layoutSelectFile.layoutSelectFile import LayoutSelectFile
 from utils import misc
 
 from gui.dialog.select_file import SelectFileDialog
@@ -53,20 +49,21 @@ class DidispeechGui(qt.QGridLayout):
 
         self._timer = TimerQThread(self)
 
-        self._f_options = None
+        self._layout_select_file: LayoutSelectFile = None
 
     def init(self) -> None:
         """ Create layout and widgets like buttons, textbox, etc.
         """
 
-        self.create_layout_select_file()
+        self._layout_select_file = LayoutSelectFile(self._input_file.file_name, self._output_file, self.select_input_file,
+                                            self.select_output_file)
         self.create_layout_options()
         self.create_layout_advance_settings()
         self.create_layout_output()
         self.create_layout_logo()
 
         # add all layout to the main frame
-        self.addLayout(self._f_select_file, 0, 0)
+        self.addLayout(self._layout_select_file.layout, 0, 0)
         self.addLayout(self._f_options, 1, 0, 1, 1)
         self.addLayout(self._f_advance_settings, 2, 0, 1, 2)
         self.addLayout(self._f_output, 4, 0, 2, 2)
@@ -75,7 +72,7 @@ class DidispeechGui(qt.QGridLayout):
         l_title = qt.QLabel()
         pixmap = qtg.QPixmap(self.DEFAULT_LOGO_FILE)
         l_title.setPixmap(pixmap)
-        self._f_select_file.addWidget(l_title, 2, 0, 2, 2)
+        #self._f_select_file.addWidget(l_title, 2, 0, 2, 2)
 
     def create_layout_options(self):
         self._f_options = qt.QGridLayout()
@@ -140,29 +137,12 @@ class DidispeechGui(qt.QGridLayout):
         self._f_advance_settings.addWidget(self._e_n_threads)
         self._f_advance_settings.addWidget(self._e_chunk_size)
 
-    def create_layout_select_file(self):
-        self._f_select_file = qt.QGridLayout()
-        # select input file (which one to transcribe)
-        self._l_select_input_file = qt.QLabel("Input file:")
-        self._b_select_input_file = qt.QPushButton(self._input_file.file_name)
-        # select output file (where to save the transcription)
-        self._l_select_output_file = qt.QLabel("Output file: ")
-        self._b_select_output_file = qt.QPushButton(self._output_file)
-        # connect buttons to functions
-        self._b_select_input_file.clicked.connect(lambda a: self.select_input_file())
-        self._b_select_output_file.clicked.connect(lambda a: self.select_output_file())
-        # add them all to the layout
-        self._f_select_file.addWidget(self._l_select_input_file, 0, 0)
-        self._f_select_file.addWidget(self._b_select_input_file, 1, 0)
-        self._f_select_file.addWidget(self._l_select_output_file, 0, 1)
-        self._f_select_file.addWidget(self._b_select_output_file, 1, 1)
-        self._f_select_file.addWidget(self.get_QHline(), 3, 0, 3, 2)
-
     def select_input_file(self) -> None:
         """ Browse into filesystem to choose an audio or a video file, then
             write it as instance variable and as button text
 
         """
+        print("ROVIVIVVI")
         select_file_dialog = SelectFileDialog(file_types=InputFile.SUPPORTED_TYPES)
         error, selected_files = select_file_dialog.show()
 
@@ -185,7 +165,7 @@ class DidispeechGui(qt.QGridLayout):
         """
         self._input_file = InputFile(input_file)
         self.didi.input_file = self._input_file
-        self._b_select_input_file.setText(path.basename(input_file))
+        self._layout_select_file.set_text_b_select_input_file(path.basename(input_file))
         # load audio in another thread because it can be slow
         qthread_load_audio = CustomQThread(self, "self.didi.load_audio()", didi=self.didi)
         qthread_load_audio.start()
@@ -359,7 +339,8 @@ class DidispeechGui(qt.QGridLayout):
         """
         return self._tb_out.toPlainText()
 
-    def get_QHline(self) -> qt.QFrame:
+    @staticmethod
+    def get_QHline() -> qt.QFrame:
         """ Return a horizontal line, aestetich purpouse.Q
 
         Returns:
