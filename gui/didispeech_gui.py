@@ -78,7 +78,7 @@ class DidispeechGui(qt.QGridLayout):
         l_title = qt.QLabel()
         pixmap = qtg.QPixmap(self.DEFAULT_LOGO_FILE)
         l_title.setPixmap(pixmap)
-        #self._f_select_file.addWidget(l_title, 2, 0, 2, 2)
+        self._layout_select_file.layout.addWidget(l_title, 2, 0, 2, 2)
 
     def select_input_file(self) -> None:
         """ Browse into filesystem to choose an audio or a video file, then
