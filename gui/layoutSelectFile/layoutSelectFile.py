@@ -46,6 +46,10 @@ class LayoutSelectFile:
     def set_text_b_select_input_file(cls, text: str):
         cls._b_select_input_file.setText(text)
 
+    @classmethod
+    def set_text_b_select_output_file(cls, text: str):
+        cls._b_select_output_file.setText(text)
+
     @staticmethod
     def get_QHline() -> qt.QFrame:
         """ Return a horizontal line, aestetich purpouse.Q

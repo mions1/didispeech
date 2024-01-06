@@ -91,8 +91,8 @@ class DidispeechGui(qt.QGridLayout):
         if error == SelectFileDialog.OK_FILE_SELECTED:
             self.set_input_file(select_file_dialog.selected)
         elif error == SelectFileDialog.NO_ALLOWED_EXTENSION:
-            MessageDialog("Error", "No allowed format", \
-                          "Format of " + select_file_dialog.selected + " is not allowed", \
+            MessageDialog("Error", "No allowed format",
+                          "Format of " + select_file_dialog.selected + " is not allowed",
                           MessageDialog.ICON_CRITICAL)
         elif error == SelectFileDialog.GENERIC_ERROR:
             MessageDialog("Error", "Generic error")
@@ -139,8 +139,8 @@ class DidispeechGui(qt.QGridLayout):
         if error == SelectFileDialog.OK_FILE_SELECTED:
             self.set_output_file(open_file_dialog.selected)
         elif error == SelectFileDialog.NO_ALLOWED_EXTENSION:
-            MessageDialog("Error", "No allowed format", \
-                          "Format of " + select_file_dialog.selected + " is not allowed", \
+            MessageDialog("Error", "No allowed format",
+                          "Format of " + open_file_dialog.selected + " is not allowed",
                           MessageDialog.ICON_CRITICAL)
         elif error == SelectFileDialog.GENERIC_ERROR:
             MessageDialog("Error", "Generic error")
@@ -155,7 +155,7 @@ class DidispeechGui(qt.QGridLayout):
         """
         self._output_file = output_file
         self.didi.output_file = self._output_file
-        self._b_select_output_file.setText(path.basename(output_file))
+        self._layout_select_file.set_text_b_select_output_file(path.basename(output_file))
 
     def start(self) -> None:
         """ After the users set input_file, output_file, start and end points,
@@ -213,7 +213,7 @@ class DidispeechGui(qt.QGridLayout):
 
         # show result in text box and show a dialog message
         self._layout_output.tb_insert("------------ RESULT -----\n" + self.didi.output_text, replace=True)
-        MessageDialog("Finish", "Parsing done in " + misc.s_2_time(self.didi.elapsed_time), \
+        MessageDialog("Finish", "Parsing done in " + misc.s_2_time(self.didi.elapsed_time),
                       "Result saved in " + self._output_file, MessageDialog.ICON_INFORMATION)
 
     def getLanguage(self) -> str:
