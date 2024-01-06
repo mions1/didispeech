@@ -1,11 +1,11 @@
 import PyQt6.QtWidgets as qt
-import PyQt6.QtCore as qtc
 import PyQt6.QtGui as qtg
 
 from os import path
 
-from gui.layoutOptions.layoutOptions import LayoutOptions
 from gui.layoutSelectFile.layoutSelectFile import LayoutSelectFile
+from gui.layoutOptions.layoutOptions import LayoutOptions
+from gui.layoutAdvanceSettings.layoutAdvanceSettings import LayoutAdvanceSettings
 from utils import misc
 
 from gui.dialog.select_file import SelectFileDialog
@@ -52,6 +52,7 @@ class DidispeechGui(qt.QGridLayout):
 
         self._layout_select_file: LayoutSelectFile = None
         self._layout_options: LayoutOptions = None
+        self._layout_advance_settings: LayoutAdvanceSettings = None
 
     def init(self) -> None:
         """ Create layout and widgets like buttons, textbox, etc.
@@ -61,14 +62,14 @@ class DidispeechGui(qt.QGridLayout):
                                                     self.select_input_file, self.select_output_file)
         self._layout_options = LayoutOptions(self.start, self.ms_end_to_audio_len, self.toggle_advance_settings,
                                              self._didispeech_app.exit)
-        self.create_layout_advance_settings()
+        self._layout_advance_settings = LayoutAdvanceSettings()
         self.create_layout_output()
         self.create_layout_logo()
 
         # add all layout to the main frame
         self.addLayout(self._layout_select_file.layout, 0, 0)
         self.addLayout(self._layout_options.layout, 1, 0, 1, 1)
-        self.addLayout(self._f_advance_settings, 2, 0, 1, 2)
+        self.addLayout(self._layout_advance_settings.layout, 2, 0, 1, 2)
         self.addLayout(self._f_output, 4, 0, 2, 2)
 
     def create_layout_logo(self):
@@ -89,18 +90,6 @@ class DidispeechGui(qt.QGridLayout):
         self.tb_insert(tmp_str, True)
         # add it to the layout
         self._f_output.addWidget(self._tb_out)
-
-    def create_layout_advance_settings(self):
-        self._f_advance_settings = qt.QHBoxLayout()
-        self._e_n_threads = qt.QLineEdit()
-        self._e_n_threads.setPlaceholderText("#Threads: default 8")
-        self._e_chunk_size = qt.QLineEdit()
-        self._e_chunk_size.setPlaceholderText("Chunk size (1000-60000): default 50000")
-        e_chunk_size_regex = qtc.QRegularExpression("^[1-5][0-9]{3,4}|60000")
-        e_chunk_size_validator = qtg.QRegularExpressionValidator(e_chunk_size_regex, self._e_chunk_size)
-        self._e_chunk_size.setValidator(e_chunk_size_validator)
-        self._f_advance_settings.addWidget(self._e_n_threads)
-        self._f_advance_settings.addWidget(self._e_chunk_size)
 
     def select_input_file(self) -> None:
         """ Browse into filesystem to choose an audio or a video file, then
@@ -207,10 +196,10 @@ class DidispeechGui(qt.QGridLayout):
         self.didi.lan = self.getLanguage()
 
         # get advance settings values (if setted)
-        chunk_size = self._e_chunk_size.text()
+        chunk_size = self._layout_advance_settings.get_e_chunk_size_text()
         if chunk_size.isdigit() and chunk_size > 1:
             self.didi.chunk_size = int(chunk_size)
-        n_threads = self._e_n_threads.text()
+        n_threads = self._layout_advance_settings.get_e_n_threads_text()
         if n_threads.isdigit():
             self.didi.THREADS = int(n_threads)
 
@@ -260,14 +249,14 @@ class DidispeechGui(qt.QGridLayout):
     def toggle_advance_settings(self) -> None:
         """ Toggle visibility of advance settings layout
         """
-        is_visible = self._f_advance_settings.itemAt(0).isEmpty()
+        is_visible = self._layout_advance_settings.layout.itemAt(0).isEmpty()
 
         new_text = "Hide advance settings" if is_visible \
             else "Show advance settings"
         self._layout_options.set_text_b_advance_settings(new_text)
 
-        for i in range(self._f_advance_settings.count()):
-            self._f_advance_settings.itemAt(i).widget().setHidden(not is_visible)
+        for i in range(self._layout_advance_settings.layout.count()):
+            self._layout_advance_settings.layout.itemAt(i).widget().setHidden(not is_visible)
 
     def print_loading(self) -> None:
         """ Print loading text
