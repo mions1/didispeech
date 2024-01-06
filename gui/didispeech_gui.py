@@ -3,6 +3,7 @@ import PyQt6.QtGui as qtg
 
 from os import path
 
+from gui.layoutOutput.layoutOutput import LayoutOutput
 from gui.layoutSelectFile.layoutSelectFile import LayoutSelectFile
 from gui.layoutOptions.layoutOptions import LayoutOptions
 from gui.layoutAdvanceSettings.layoutAdvanceSettings import LayoutAdvanceSettings
@@ -53,6 +54,7 @@ class DidispeechGui(qt.QGridLayout):
         self._layout_select_file: LayoutSelectFile = None
         self._layout_options: LayoutOptions = None
         self._layout_advance_settings: LayoutAdvanceSettings = None
+        self._layout_output: LayoutOutput = None
 
     def init(self) -> None:
         """ Create layout and widgets like buttons, textbox, etc.
@@ -63,33 +65,20 @@ class DidispeechGui(qt.QGridLayout):
         self._layout_options = LayoutOptions(self.start, self.ms_end_to_audio_len, self.toggle_advance_settings,
                                              self._didispeech_app.exit)
         self._layout_advance_settings = LayoutAdvanceSettings()
-        self.create_layout_output()
+        self._layout_output = LayoutOutput()
         self.create_layout_logo()
 
         # add all layout to the main frame
         self.addLayout(self._layout_select_file.layout, 0, 0)
         self.addLayout(self._layout_options.layout, 1, 0, 1, 1)
         self.addLayout(self._layout_advance_settings.layout, 2, 0, 1, 2)
-        self.addLayout(self._f_output, 4, 0, 2, 2)
+        self.addLayout(self._layout_output.layout, 4, 0, 2, 2)
 
     def create_layout_logo(self):
         l_title = qt.QLabel()
         pixmap = qtg.QPixmap(self.DEFAULT_LOGO_FILE)
         l_title.setPixmap(pixmap)
         #self._f_select_file.addWidget(l_title, 2, 0, 2, 2)
-
-    def create_layout_output(self):
-        self._f_output = qt.QVBoxLayout()
-        # output box (where write log and result)
-        self._tb_out = qt.QTextEdit()
-        self._tb_out.setReadOnly(True)
-        tmp_str = "1. Select an audio file\n"
-        tmp_str += "2. Set range time to parse\n"
-        tmp_str += "3. Press Start button\n"
-        tmp_str += "In this box you will see log. Result will be saved on output file"
-        self.tb_insert(tmp_str, True)
-        # add it to the layout
-        self._f_output.addWidget(self._tb_out)
 
     def select_input_file(self) -> None:
         """ Browse into filesystem to choose an audio or a video file, then
@@ -223,7 +212,7 @@ class DidispeechGui(qt.QGridLayout):
         self._layout_options.set_enable_b_start(True)
 
         # show result in text box and show a dialog message
-        self.tb_insert("------------ RESULT -----\n" + self.didi.output_text, replace=True)
+        self._layout_output.tb_insert("------------ RESULT -----\n" + self.didi.output_text, replace=True)
         MessageDialog("Finish", "Parsing done in " + misc.s_2_time(self.didi.elapsed_time), \
                       "Result saved in " + self._output_file, MessageDialog.ICON_INFORMATION)
 
@@ -262,44 +251,11 @@ class DidispeechGui(qt.QGridLayout):
         """ Print loading text
         """
         if not self._timer.stopped:
-            current_text_list = self.tb_get_text().split("\n")
+            current_text_list = self._layout_output.get_tb_out_text().split("\n")
             if "Loading" in current_text_list[-1]:
                 current_text_list[-1] = current_text_list[-1] + "."
             else:
                 current_text_list.append("Loading.")
-            self.tb_insert("\n".join(current_text_list), replace=True)
+            self._layout_output.tb_insert("\n".join(current_text_list), replace=True)
         else:
-            self.tb_insert("Done!", replace=False)
-
-    def tb_insert(self, text, replace=False) -> None:
-        """ Insert a text into output textbox
-
-        Args:
-            text (str): text to write into Textbox
-            replace (bool, optional): If true, replace current text,
-                otherwise append the new text to it. Defaults to False.
-        """
-        if replace:
-            self._tb_out.setText(text)
-        else:
-            self._tb_out.append(text)
-
-    def tb_get_text(self) -> str:
-        """ Get the current text in output textbox.
-
-        Returns:
-            str: text of output textbox
-        """
-        return self._tb_out.toPlainText()
-
-    @staticmethod
-    def get_QHline() -> qt.QFrame:
-        """ Return a horizontal line, aestetich purpouse.Q
-
-        Returns:
-            qt.QFrame: a horizontal line
-        """
-        qhline = qt.QFrame()
-        qhline.setFrameShape(qhline.Shape.HLine)
-        qhline.setFrameShadow(qhline.Shadow.Plain)
-        return qhline
+            self._layout_output.tb_insert("Done!", replace=False)
