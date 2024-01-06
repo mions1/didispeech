@@ -4,6 +4,7 @@ import PyQt6.QtGui as qtg
 
 from os import path
 
+from gui.layoutOptions.layoutOptions import LayoutOptions
 from gui.layoutSelectFile.layoutSelectFile import LayoutSelectFile
 from utils import misc
 
@@ -50,21 +51,23 @@ class DidispeechGui(qt.QGridLayout):
         self._timer = TimerQThread(self)
 
         self._layout_select_file: LayoutSelectFile = None
+        self._layout_options: LayoutOptions = None
 
     def init(self) -> None:
         """ Create layout and widgets like buttons, textbox, etc.
         """
 
-        self._layout_select_file = LayoutSelectFile(self._input_file.file_name, self._output_file, self.select_input_file,
-                                            self.select_output_file)
-        self.create_layout_options()
+        self._layout_select_file = LayoutSelectFile(self._input_file.file_name, self._output_file,
+                                                    self.select_input_file, self.select_output_file)
+        self._layout_options = LayoutOptions(self.start, self.ms_end_to_audio_len, self.toggle_advance_settings,
+                                             self._didispeech_app.exit)
         self.create_layout_advance_settings()
         self.create_layout_output()
         self.create_layout_logo()
 
         # add all layout to the main frame
         self.addLayout(self._layout_select_file.layout, 0, 0)
-        self.addLayout(self._f_options, 1, 0, 1, 1)
+        self.addLayout(self._layout_options.layout, 1, 0, 1, 1)
         self.addLayout(self._f_advance_settings, 2, 0, 1, 2)
         self.addLayout(self._f_output, 4, 0, 2, 2)
 
@@ -73,44 +76,6 @@ class DidispeechGui(qt.QGridLayout):
         pixmap = qtg.QPixmap(self.DEFAULT_LOGO_FILE)
         l_title.setPixmap(pixmap)
         #self._f_select_file.addWidget(l_title, 2, 0, 2, 2)
-
-    def create_layout_options(self):
-        self._f_options = qt.QGridLayout()
-        # set the transcription start point
-        self._l_start = qt.QLabel("Start (hh:mm:ss)")
-        self._e_start = qt.QLineEdit()
-        self._e_start.setMaxLength(8)
-        self._e_start.setInputMask("99:99:99")
-        self._e_start.setText("00:00:00")
-        self._cb_language = qt.QComboBox()
-        self._cb_language.addItems(["Italian", "English"])
-        # set the transcription end point
-        self._l_end = qt.QLabel("End (hh:mm:ss)")
-        self._e_end = qt.QLineEdit()
-        self._e_end.setMaxLength(8)
-        self._e_end.setInputMask("99:99:99")
-        self._e_end.setText("00:00:00")
-        self._b_ms_end_to_audio_len = qt.QPushButton("Time to audio len", enabled=False, )
-        self._b_ms_end_to_audio_len.clicked.connect(self.ms_end_to_audio_len)
-        self._b_ms_end_to_audio_len.setEnabled(False)
-        # buttons to start/quit
-        self._b_start = qt.QPushButton("Start", enabled=False, default=True)
-        self._b_quit = qt.QPushButton("Force quit")
-        self._b_advance_settings = qt.QPushButton("Hide advance settings")
-        self._b_start.clicked.connect(self.start)
-        self._b_quit.clicked.connect(self._didispeech_app.exit)
-        self._b_advance_settings.clicked.connect(self.toggle_advance_settings)
-        # add them all to the layout
-        self._f_options.addWidget(self._l_start, 0, 0)
-        self._f_options.addWidget(self._e_start, 0, 1)
-        self._f_options.addWidget(self._cb_language, 0, 2)
-        self._f_options.addWidget(self._l_end, 1, 0)
-        self._f_options.addWidget(self._e_end, 1, 1)
-        self._f_options.addWidget(self._b_ms_end_to_audio_len, 1, 2)
-        self._f_options.addWidget(self._b_start, 2, 0, 1, 2)
-        self._f_options.addWidget(self._b_quit, 2, 2, 1, 2)
-        self._f_options.addWidget(self.get_QHline(), 3, 0, 1, 3)
-        self._f_options.addWidget(self._b_advance_settings, 4, 0, 1, 3)
 
     def create_layout_output(self):
         self._f_output = qt.QVBoxLayout()
@@ -142,7 +107,6 @@ class DidispeechGui(qt.QGridLayout):
             write it as instance variable and as button text
 
         """
-        print("ROVIVIVVI")
         select_file_dialog = SelectFileDialog(file_types=InputFile.SUPPORTED_TYPES)
         error, selected_files = select_file_dialog.show()
 
@@ -182,9 +146,9 @@ class DidispeechGui(qt.QGridLayout):
         """
         self._timer.stop()
         audio_len = self.didi.input_file.get_audio_len()
-        self._e_end.setText(misc.ms_2_time(audio_len))
-        self._b_start.setEnabled(True)
-        self._b_ms_end_to_audio_len.setEnabled(True)
+        self._layout_options.set_text_e_end(misc.ms_2_time(audio_len))
+        self._layout_options.set_enable_b_start(True)
+        self._layout_options.set_enable_b_ms_end_to_audio_len(True)
 
     def select_output_file(self) -> None:
         """ Browse into filesystem to choose where save the transcript, then
@@ -223,8 +187,8 @@ class DidispeechGui(qt.QGridLayout):
             After the parse, an information dialog will be showed.
         """
         # get the start and end points
-        self._start = self._e_start.text()
-        self._end = self._e_end.text()
+        self._start = self._layout_options.get_e_start_text()
+        self._end = self._layout_options.get_e_end_text()
 
         ms_start, ms_end = misc.time_2_ms(self._start, self._end)
 
@@ -254,7 +218,7 @@ class DidispeechGui(qt.QGridLayout):
         qthread_start = CustomQThread(self, "self.didi.start()", didi=self.didi)
         qthread_start.start()
         qthread_start.qthread_finish_signal.connect(lambda: self.finish_parse())
-        self._b_start.setEnabled(False)
+        self._layout_options.set_enable_b_start(False)
 
         # meanwhile parsing, print loading
         self._timer.start()
@@ -267,7 +231,7 @@ class DidispeechGui(qt.QGridLayout):
         """
         self._timer.stop()
         # re-enable button
-        self._b_start.setEnabled(True)
+        self._layout_options.set_enable_b_start(True)
 
         # show result in text box and show a dialog message
         self.tb_insert("------------ RESULT -----\n" + self.didi.output_text, replace=True)
@@ -280,7 +244,7 @@ class DidispeechGui(qt.QGridLayout):
         Returns:
             str: tag of choosen language
         """
-        language = self._cb_language.currentText()
+        language = self._layout_options.get_current_text_cb_language()
 
         if language == "Italian":
             return "it-IT"
@@ -291,7 +255,7 @@ class DidispeechGui(qt.QGridLayout):
         """ Set ms end to audio lenght
         """
         audio_len = self.didi.input_file.get_audio_len()
-        self._e_end.setText(misc.ms_2_time(audio_len))
+        self._layout_options.set_text_e_end(misc.ms_2_time(audio_len))
 
     def toggle_advance_settings(self) -> None:
         """ Toggle visibility of advance settings layout
@@ -300,7 +264,7 @@ class DidispeechGui(qt.QGridLayout):
 
         new_text = "Hide advance settings" if is_visible \
             else "Show advance settings"
-        self._b_advance_settings.setText(new_text)
+        self._layout_options.set_text_b_advance_settings(new_text)
 
         for i in range(self._f_advance_settings.count()):
             self._f_advance_settings.itemAt(i).widget().setHidden(not is_visible)
